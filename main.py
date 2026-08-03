@@ -1,7 +1,12 @@
+import sys
 import pygame
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT
-from logger import log_state
+from asteroid import Asteroid
+from asteroidfield import AsteroidField
+from constants import SCREEN_HEIGHT, SCREEN_WIDTH
+from logger import log_event, log_state
 from player import Player
+
+
 def main():
     print("Starting Asteroids")
     print(f"Screen width: {SCREEN_WIDTH}")
@@ -11,11 +16,22 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Asteroids")
-    player = Player(
-    SCREEN_WIDTH / 2,
-    SCREEN_HEIGHT / 2,
-    )
-    # Set up clock and delta time tracking
+
+    # Set up sprite groups
+    updatable = pygame.sprite.Group()
+    drawable = pygame.sprite.Group()
+    asteroids = pygame.sprite.Group()
+
+    # Assign static container groups
+    Player.containers = (updatable, drawable)
+    Asteroid.containers = (asteroids, updatable, drawable)
+    AsteroidField.containers = (updatable,)  # Spawner only needs to update
+
+    # Instantiate game entities
+    player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+    asteroid_field = AsteroidField()  # Spawns asteroids periodically into 'asteroids' group
+
+    # Set up clock
     clock = pygame.time.Clock()
     dt = 0.0
 
@@ -27,17 +43,20 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
-        player.update(dt)
+
+        # Update all objects in updatable group
+        updatable.update(dt)
+
         # Render step
         screen.fill("black")
-        player.draw(screen)
+        for obj in drawable:
+            obj.draw(screen)
+
         pygame.display.flip()
-        
-        
-        
 
         # Cap frame rate at 60 FPS and calculate delta time in seconds
-        dt = clock.tick(60) / 1000
+        dt = clock.tick(60) / 1000.0
+
 
 if __name__ == "__main__":
     main()
