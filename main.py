@@ -5,7 +5,7 @@ from asteroidfield import AsteroidField
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 from logger import log_event, log_state
 from player import Player
-
+from shot import Shot
 
 def main():
     print("Starting Asteroids")
@@ -21,11 +21,12 @@ def main():
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
-
+    shots = pygame.sprite.Group()
     # Assign static container groups
     Player.containers = (updatable, drawable)
     Asteroid.containers = (asteroids, updatable, drawable)
-    AsteroidField.containers = (updatable,)  # Spawner only needs to update
+    AsteroidField.containers = (updatable,) 
+    Shot.containers = (shots, updatable, drawable)
 
     # Instantiate game entities
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
@@ -47,6 +48,13 @@ def main():
         # Update all objects in updatable group
         updatable.update(dt)
 
+
+        for asteroid in asteroids:
+            if player.collide_with(asteroid):
+                log_event("player_hit")
+                print("Game over")
+                sys.exit()
+                
         # Render step
         screen.fill("black")
         for obj in drawable:
