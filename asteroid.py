@@ -1,22 +1,32 @@
 import random
 import pygame
+import pathlib
 from circleshape import CircleShape
-from constants import ASTEROID_MIN_RADIUS, LINE_WIDTH
-from logger import log_event  # Adjust import path if log_event is located elsewhere
+from constants import ASTEROID_MIN_RADIUS
+from logger import log_event
 
 
 class Asteroid(CircleShape):
+    # Class-level variable to store the original image so it's loaded only once
+    image = None
+
     def __init__(self, x: float, y: float, radius: float) -> None:
         super().__init__(x, y, radius)
 
+        # Load the image once if it hasn't been loaded yet
+
+        if Asteroid.image is None:
+            asteroid_path = pathlib.Path("assets/asteroid.png")
+            Asteroid.image = pygame.image.load(asteroid_path).convert_alpha()
+
+        # Scale the sprite to match the asteroid's diameter (2 * radius)
+        diameter = int(self.radius * 2)
+        self.scaled_image = pygame.transform.scale(Asteroid.image, (diameter, diameter))
+
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.circle(
-            screen,
-            "white",
-            self.position,
-            self.radius,
-            width=LINE_WIDTH,
-        )
+        # Create a rect centered at self.position so the image draws over the collision circle
+        image_rect = self.scaled_image.get_rect(center=(self.position.x, self.position.y))
+        screen.blit(self.scaled_image, image_rect)
 
     def update(self, dt: float) -> None:
         self.position += self.velocity * dt

@@ -20,7 +20,8 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Asteroids")
-
+    bg_image = pygame.image.load("assets/Background.png").convert()
+    bg_image = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
     # Set up sprite groups
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
@@ -110,7 +111,7 @@ def main():
                         break
 
 
-        screen.fill((0, 0, 0))
+        screen.blit(bg_image, (0, 0))
 
 
         for obj in drawable:
