@@ -1,14 +1,16 @@
 import pygame
-from shot import Shot
 from circleshape import CircleShape
 from constants import (
-    PLAYER_RADIUS, 
-    LINE_WIDTH, 
-    PLAYER_TURN_SPEED, 
-    PLAYER_SPEED, 
-    PLAYER_SHOOT_SPEED, 
-    PLAYER_SHOOT_COOLDOWN_SECONDS
+    LINE_WIDTH,
+    PLAYER_RADIUS,
+    PLAYER_SHOOT_COOLDOWN_SECONDS,
+    PLAYER_SHOOT_SPEED,
+    PLAYER_SPEED,
+    PLAYER_TURN_SPEED,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
 )
+from shot import Shot
 
 
 class Player(CircleShape):
@@ -34,23 +36,12 @@ class Player(CircleShape):
         )
 
     def shoot(self):
-        # Prevent shooting if cooldown timer is active
         if self.cooldown_timer > 0:
             return
 
-        # Reset the cooldown timer
         self.cooldown_timer = PLAYER_SHOOT_COOLDOWN_SECONDS
-
-        # Create a new Shot at the player's current position
         shot = Shot(self.position.x, self.position.y)
-        
-        # Define the base direction vector (pointing down initially)
-        velocity = pygame.Vector2(0, 1)
-        
-        # Rotate the vector to match the player's facing direction/rotation
-        velocity = velocity.rotate(self.rotation)
-        
-        # Scale up the velocity vector by the shooting speed multiplier
+        velocity = pygame.Vector2(0, 1).rotate(self.rotation)
         shot.velocity = velocity * PLAYER_SHOOT_SPEED
 
     def move(self, dt):
@@ -61,7 +52,6 @@ class Player(CircleShape):
         self.rotation += dt * PLAYER_TURN_SPEED
 
     def update(self, dt: float) -> None:
-        # Decrease cooldown timer each frame
         if self.cooldown_timer > 0:
             self.cooldown_timer -= dt
 
@@ -77,3 +67,7 @@ class Player(CircleShape):
             self.move(-dt)
         if keys[pygame.K_SPACE]:
             self.shoot()
+
+        # Wrap position across screen edges
+        self.position.x %= SCREEN_WIDTH
+        self.position.y %= SCREEN_HEIGHT

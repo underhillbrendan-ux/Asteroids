@@ -4,8 +4,11 @@ from asteroid import Asteroid
 from asteroidfield import AsteroidField
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 from logger import log_event, log_state
+from particles import Particle
 from player import Player
 from shot import Shot
+from spawner import create_particle_explosion
+
 
 def main():
     print("Starting Asteroids")
@@ -22,15 +25,18 @@ def main():
     drawable = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
+    particles = pygame.sprite.Group()
+
     # Assign static container groups
     Player.containers = (updatable, drawable)
     Asteroid.containers = (asteroids, updatable, drawable)
-    AsteroidField.containers = (updatable,) 
+    AsteroidField.containers = (updatable,)
     Shot.containers = (shots, updatable, drawable)
+    Particle.containers = (particles, updatable, drawable)
 
     # Instantiate game entities
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-    asteroid_field = AsteroidField()  # Spawns asteroids periodically into 'asteroids' group
+    asteroid_field = AsteroidField()
 
     # Set up clock
     clock = pygame.time.Clock()
@@ -45,23 +51,27 @@ def main():
             if event.type == pygame.QUIT:
                 return
 
-        # Update all objects in updatable group
+        # 1. Update all game objects
         updatable.update(dt)
 
-
+        # 2. Check Player <-> Asteroid Collisions
         for asteroid in asteroids:
             if player.collide_with(asteroid):
-                log_event("player_hit")
+                create_particle_explosion(player.position.x, player.position.y)
                 print("Game over")
                 sys.exit()
+
+        # 3. Check Shot <-> Asteroid Collisions
         for asteroid in asteroids:
             for shot in shots:
                 if asteroid.collide_with(shot):
-                    log_event("asteroid_shot")
+                    create_particle_explosion(asteroid.position.x, asteroid.position.y)
                     asteroid.split()
-                    shot.kill()       
-        # Render step
-        screen.fill("black")
+                    shot.kill()
+                    break  # Stop checking this asteroid once destroyed
+
+        # 4. Render Step
+        screen.fill((0, 0, 0))
         for obj in drawable:
             obj.draw(screen)
 
