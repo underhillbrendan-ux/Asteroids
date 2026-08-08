@@ -6,6 +6,7 @@ from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 from logger import log_event, log_state
 from particles import Particle
 from player import Player
+from score import Scoreboard
 from shot import Shot
 from spawner import create_particle_explosion
 
@@ -34,13 +35,29 @@ def main():
     Shot.containers = (shots, updatable, drawable)
     Particle.containers = (particles, updatable, drawable)
 
-    # Instantiate game entities
-    player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-    asteroid_field = AsteroidField()
+    # Fonts for game-over screen
+    game_over_font = pygame.font.Font(None, 96)
+    score_font = pygame.font.Font(None, 48)
+    restart_font = pygame.font.Font(None, 32)
 
-    # Set up clock
+    def reset_game():
+
+        updatable.empty()
+        drawable.empty()
+        asteroids.empty()
+        shots.empty()
+        particles.empty()
+
+        new_player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+        new_field = AsteroidField()
+        new_scoreboard = Scoreboard(x=20, y=20)
+        return new_player, new_field, new_scoreboard
+
+    player, asteroid_field, scoreboard = reset_game()
+
     clock = pygame.time.Clock()
     dt = 0.0
+    game_over = False
 
     # Game Loop
     while True:
@@ -49,35 +66,92 @@ def main():
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
-
-        # 1. Update all game objects
-        updatable.update(dt)
-
-        # 2. Check Player <-> Asteroid Collisions
-        for asteroid in asteroids:
-            if player.collide_with(asteroid):
-                create_particle_explosion(player.position.x, player.position.y)
-                print("Game over")
+                pygame.quit()
                 sys.exit()
 
-        # 3. Check Shot <-> Asteroid Collisions
-        for asteroid in asteroids:
-            for shot in shots:
-                if asteroid.collide_with(shot):
-                    create_particle_explosion(asteroid.position.x, asteroid.position.y)
-                    asteroid.split()
-                    shot.kill()
-                    break  # Stop checking this asteroid once destroyed
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
 
-        # 4. Render Step
+                if game_over and event.key == pygame.K_r:
+                    player, asteroid_field, scoreboard = reset_game()
+                    game_over = False
+
+
+        if not game_over:
+            updatable.update(dt)
+        else:
+            particles.update(dt)
+
+
+        if not game_over:
+            for asteroid in asteroids:
+                if player.collide_with(asteroid):
+                    create_particle_explosion(
+                        player.position.x, player.position.y
+                    )
+                    log_event("player_died")
+                    game_over = True
+                    player.kill()
+                    break
+
+
+        if not game_over:
+            for asteroid in list(asteroids):
+                for shot in list(shots):
+                    if asteroid.collide_with(shot):
+                        create_particle_explosion(
+                            asteroid.position.x, asteroid.position.y
+                        )
+                        scoreboard.add_score(100)
+                        asteroid.split()
+                        shot.kill()
+                        break
+
+
         screen.fill((0, 0, 0))
+
+
         for obj in drawable:
             obj.draw(screen)
 
+        scoreboard.draw(screen)
+
+
+        if game_over:
+            game_over_text = game_over_font.render(
+                "GAME OVER", True, (255, 255, 255)
+            )
+            final_score_text = score_font.render(
+                f"Final Score: {scoreboard.score}", True, (255, 255, 255)
+            )
+            restart_text = restart_font.render(
+                "Press R to restart or ESC to quit", True, (180, 180, 180)
+            )
+
+            screen.blit(
+                game_over_text,
+                game_over_text.get_rect(
+                    center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 80)
+                ),
+            )
+            screen.blit(
+                final_score_text,
+                final_score_text.get_rect(
+                    center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+                ),
+            )
+            screen.blit(
+                restart_text,
+                restart_text.get_rect(
+                    center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 60)
+                ),
+            )
+
         pygame.display.flip()
 
-        # Cap frame rate at 60 FPS and calculate delta time in seconds
+        # Cap frame rate at 60 FPS and calculate delta time
         dt = clock.tick(60) / 1000.0
 
 

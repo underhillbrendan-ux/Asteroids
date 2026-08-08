@@ -9,6 +9,8 @@ from constants import (
     PLAYER_TURN_SPEED,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    FRICTION,
+    PLAYER_ACCELERATION
 )
 from shot import Shot
 
@@ -44,9 +46,9 @@ class Player(CircleShape):
         velocity = pygame.Vector2(0, 1).rotate(self.rotation)
         shot.velocity = velocity * PLAYER_SHOOT_SPEED
 
-    def move(self, dt):
+    def accelerate(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        self.position += forward * dt * PLAYER_SPEED
+        self.velocity += forward * PLAYER_ACCELERATION * dt
 
     def rotate(self, dt):
         self.rotation += dt * PLAYER_TURN_SPEED
@@ -62,12 +64,11 @@ class Player(CircleShape):
         if keys[pygame.K_d]:
             self.rotate(-dt)
         if keys[pygame.K_w]:
-            self.move(dt)    
-        if keys[pygame.K_s]:
-            self.move(-dt)
+            self.accelerate(dt) 
         if keys[pygame.K_SPACE]:
             self.shoot()
-
-        # Wrap position across screen edges
+        
+        self.velocity *= max(0, 1 - (FRICTION * dt))
+        self.position += self.velocity * dt
         self.position.x %= SCREEN_WIDTH
         self.position.y %= SCREEN_HEIGHT
