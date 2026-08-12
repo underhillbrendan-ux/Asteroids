@@ -11,14 +11,15 @@ from player import Player
 from score import Scoreboard
 from shot import Shot
 from spawner import create_particle_explosion
-
+from sounds import generate_explosion_sound
 
 def main():
     # Initialize Pygame and set up the display with RESIZABLE flag
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Asteroids")
-
+    # sounds init
+    explosion = generate_explosion_sound()
     # Keep the raw image in memory and create a scaled copy
     bg_path = pathlib.Path("assets") / "Background.png"
     bg_raw = pygame.image.load(bg_path).convert()
@@ -63,7 +64,6 @@ def main():
 
     # Game Loop
     while True:
-        log_state()
 
         # Handle events
         for event in pygame.event.get():
@@ -71,7 +71,7 @@ def main():
                 pygame.quit()
                 sys.exit()
 
-            # 🛠️ Re-scale background whenever window is resized or maximized
+            #  Re-scale background whenever window is resized or maximized
             elif event.type == pygame.VIDEORESIZE:
                 bg_image = pygame.transform.scale(bg_raw, screen.get_size())
 
@@ -97,6 +97,7 @@ def main():
                     )
                     log_event("player_died")
                     game_over = True
+                    explosion.play()
                     player.kill()
                     break
 
@@ -105,8 +106,9 @@ def main():
                 for shot in list(shots):
                     if asteroid.collide_with(shot):
                         create_particle_explosion(
-                            asteroid.position.x, asteroid.position.y
+                        asteroid.position.x, asteroid.position.y
                         )
+                        explosion.play()
                         scoreboard.add_score(100)
                         asteroid.split()
                         shot.kill()
@@ -125,13 +127,13 @@ def main():
             current_w, current_h = screen.get_size()
 
             game_over_text = game_over_font.render(
-                "GAME OVER", True, (255, 255, 255)
+                "GAME OVER", True, (0, 0, 0)
             )
             final_score_text = score_font.render(
-                f"Final Score: {scoreboard.score}", True, (255, 255, 255)
+                f"Final Score: {scoreboard.score}", True, (50, 205, 50)
             )
             restart_text = restart_font.render(
-                "Press R to restart or ESC to quit", True, (180, 180, 180)
+                "Press R to restart or ESC to quit", True, (0, 0, 0)
             )
 
             screen.blit(

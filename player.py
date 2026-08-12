@@ -14,6 +14,7 @@ from constants import (
     PLAYER_ACCELERATION
 )
 from shot import Shot
+from sounds import sound_manager
 
 
 class Player(CircleShape):
@@ -34,7 +35,7 @@ class Player(CircleShape):
             diameter = int(self.radius * 3)
             scaled_base = pygame.transform.smoothscale(Player.image, (diameter, diameter)).convert_alpha()
 
-            # Pre-render all 360 integer angles so Pygame never has to do real-time filtering
+            # Pre-render all 360 integer angles
             Player.rotated_cache = {
                 angle: pygame.transform.rotate(scaled_base, angle).convert_alpha()
                 for angle in range(360)
@@ -49,18 +50,13 @@ class Player(CircleShape):
         return [a, b, c]
 
     def draw(self, screen):
-        # 1. Convert current rotation to a clean integer angle (0 - 359)
         angle = int(-self.rotation + 180) % 360
-
-        # 2. Grab pre-rendered crisp texture from cache
         rotated_image = Player.rotated_cache[angle]
 
-        # 3. Re-center over position
         center_x = round(self.position.x)
         center_y = round(self.position.y)
         rotated_rect = rotated_image.get_rect(center=(center_x, center_y))
 
-        # 4. Render onto screen
         screen.blit(rotated_image, rotated_rect)
 
     def shoot(self):
@@ -71,6 +67,9 @@ class Player(CircleShape):
         shot = Shot(self.position.x, self.position.y)
         velocity = pygame.Vector2(0, 1).rotate(self.rotation)
         shot.velocity = velocity * PLAYER_SHOOT_SPEED
+        
+        # Zero-lag audio playback from sound_manager
+        sound_manager.laser.play()
 
     def accelerate(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
