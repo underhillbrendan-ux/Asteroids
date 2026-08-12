@@ -1,5 +1,7 @@
 import sys
 import pygame
+import pathlib
+from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
@@ -12,16 +14,16 @@ from spawner import create_particle_explosion
 
 
 def main():
-    print("Starting Asteroids")
-    print(f"Screen width: {SCREEN_WIDTH}")
-    print(f"Screen height: {SCREEN_HEIGHT}")
-
-    # Initialize Pygame and set up the display
+    # Initialize Pygame and set up the display with RESIZABLE flag
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Asteroids")
-    bg_image = pygame.image.load("assets/Background.png").convert()
-    bg_image = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    # Keep the raw image in memory and create a scaled copy
+    bg_path = pathlib.Path("assets") / "Background.png"
+    bg_raw = pygame.image.load(bg_path).convert()
+    bg_image = pygame.transform.scale(bg_raw, screen.get_size())
+
     # Set up sprite groups
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
@@ -42,7 +44,6 @@ def main():
     restart_font = pygame.font.Font(None, 32)
 
     def reset_game():
-
         updatable.empty()
         drawable.empty()
         asteroids.empty()
@@ -70,7 +71,11 @@ def main():
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.KEYDOWN:
+            # 🛠️ Re-scale background whenever window is resized or maximized
+            elif event.type == pygame.VIDEORESIZE:
+                bg_image = pygame.transform.scale(bg_raw, screen.get_size())
+
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
@@ -79,12 +84,10 @@ def main():
                     player, asteroid_field, scoreboard = reset_game()
                     game_over = False
 
-
         if not game_over:
             updatable.update(dt)
         else:
             particles.update(dt)
-
 
         if not game_over:
             for asteroid in asteroids:
@@ -96,7 +99,6 @@ def main():
                     game_over = True
                     player.kill()
                     break
-
 
         if not game_over:
             for asteroid in list(asteroids):
@@ -110,17 +112,18 @@ def main():
                         shot.kill()
                         break
 
-
+        # Draw the re-scaled background
         screen.blit(bg_image, (0, 0))
-
 
         for obj in drawable:
             obj.draw(screen)
 
         scoreboard.draw(screen)
 
-
         if game_over:
+            # Use current screen width/height so text stays centered on maximize
+            current_w, current_h = screen.get_size()
+
             game_over_text = game_over_font.render(
                 "GAME OVER", True, (255, 255, 255)
             )
@@ -134,19 +137,19 @@ def main():
             screen.blit(
                 game_over_text,
                 game_over_text.get_rect(
-                    center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 80)
+                    center=(current_w / 2, current_h / 2 - 80)
                 ),
             )
             screen.blit(
                 final_score_text,
                 final_score_text.get_rect(
-                    center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+                    center=(current_w / 2, current_h / 2)
                 ),
             )
             screen.blit(
                 restart_text,
                 restart_text.get_rect(
-                    center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 60)
+                    center=(current_w / 2, current_h / 2 + 60)
                 ),
             )
 

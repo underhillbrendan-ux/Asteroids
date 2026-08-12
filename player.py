@@ -17,46 +17,50 @@ from shot import Shot
 
 
 class Player(CircleShape):
-    # Class-level variable to store the unscaled base image
     image = None
+    rotated_cache = {}  # Cache for all 360 pre-rotated directions
 
     def __init__(self, x, y):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
-        self.cooldown_timer = 0  # Shot cooldown timer initialized to 0
+        self.cooldown_timer = 0
 
-        # Load the ship PNG once if it hasn't been loaded yet
+        # Load base image once
         if Player.image is None:
             ship_path = pathlib.Path("assets") / "Ship.png"
             Player.image = pygame.image.load(ship_path).convert_alpha()
 
-        # Scale the image to match the player's diameter (2 * radius)
-        diameter = int(self.radius * 3.5)
-        self.scaled_image = pygame.transform.scale(Player.image, (diameter, diameter))
+            # Scale and explicitly call convert_alpha() on the scaled surface
+            diameter = int(self.radius * 3)
+            scaled_base = pygame.transform.smoothscale(Player.image, (diameter, diameter)).convert_alpha()
+
+            # Pre-render all 360 integer angles so Pygame never has to do real-time filtering
+            Player.rotated_cache = {
+                angle: pygame.transform.rotate(scaled_base, angle).convert_alpha()
+                for angle in range(360)
+            }
 
     def triangle(self) -> list[pygame.Vector2]:
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
+        right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 2
         a = self.position + forward * self.radius
         b = self.position - forward * self.radius - right
         c = self.position - forward * self.radius + right
         return [a, b, c]
 
     def draw(self, screen):
-        # 1. Rotate the pre-scaled image.
-        # Pygame rotates counter-clockwise (+deg), but Pygame screen vectors (+Y down)
-        # rotate clockwise, so we negate self.rotation.
-        angle = -self.rotation
+        # 1. Convert current rotation to a clean integer angle (0 - 359)
+        angle = int(-self.rotation + 180) % 360
 
-        angle = -self.rotation + 180
+        # 2. Grab pre-rendered crisp texture from cache
+        rotated_image = Player.rotated_cache[angle]
 
-        rotated_image = pygame.transform.rotate(self.scaled_image, angle)
+        # 3. Re-center over position
+        center_x = round(self.position.x)
+        center_y = round(self.position.y)
+        rotated_rect = rotated_image.get_rect(center=(center_x, center_y))
 
-        # 2. Get the new bounding box rect centered on self.position
-        # (When surfaces rotate in Pygame, their width/height change slightly, so re-centering is required)
-        rotated_rect = rotated_image.get_rect(center=(self.position.x, self.position.y))
-
-        # 3. Render onto screen
+        # 4. Render onto screen
         screen.blit(rotated_image, rotated_rect)
 
     def shoot(self):
@@ -91,6 +95,10 @@ class Player(CircleShape):
             self.shoot()
         
         self.velocity *= max(0, 1 - (FRICTION * dt))
+
+        if self.velocity.length_squared() < 0.01:
+            self.velocity = pygame.Vector2(0, 0)
+
         self.position += self.velocity * dt
         self.position.x %= SCREEN_WIDTH
         self.position.y %= SCREEN_HEIGHT
