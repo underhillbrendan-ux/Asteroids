@@ -11,3 +11,8 @@ wheels/
 
 game_state.jsonl
 game_events.jsonl
+
+# Ignore executables and PyInstaller build artifacts
+*.exe
+build/
+dist/
