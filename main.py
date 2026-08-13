@@ -12,6 +12,11 @@ from score import Scoreboard
 from shot import Shot
 from spawner import create_particle_explosion
 from sounds import generate_explosion_sound
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and PyInstaller """
+    if hasattr(sys, "_MEIPASS"):
+        return pathlib.Path(sys._MEIPASS) / relative_path
+    return pathlib.Path(".") / relative_path
 
 def main():
     # Initialize Pygame and set up the display with RESIZABLE flag
@@ -21,7 +26,7 @@ def main():
     # sounds init
     explosion = generate_explosion_sound()
     # Keep the raw image in memory and create a scaled copy
-    bg_path = pathlib.Path("assets") / "Background.png"
+    bg_path = resource_path(pathlib.Path("assets") / "Background.png")
     bg_raw = pygame.image.load(bg_path).convert()
     bg_image = pygame.transform.scale(bg_raw, screen.get_size())
 
@@ -95,7 +100,6 @@ def main():
                     create_particle_explosion(
                         player.position.x, player.position.y
                     )
-                    log_event("player_died")
                     game_over = True
                     explosion.play()
                     player.kill()

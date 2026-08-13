@@ -1,21 +1,23 @@
 import os
+import sys
 import numpy as np
 import pygame
 
-# Point Pygame to the WSLg PulseAudio socket BEFORE importing pygame
-os.environ['PULSE_SERVER'] = 'unix:/mnt/wslg/PulseServer'
-os.environ['SDL_AUDIODRIVER'] = 'pulseaudio'
+# Only set WSLg PulseAudio variables when running natively inside Linux/WSL
+if sys.platform.startswith('linux'):
+    os.environ['PULSE_SERVER'] = 'unix:/mnt/wslg/PulseServer'
+    os.environ['SDL_AUDIODRIVER'] = 'pulseaudio'
 
 
 def init_audio(sample_rate=44100, buffer_size=512):
-    """Initializes Pygame audio mixer with low buffer size to eliminate WSLg latency."""
+    """Initializes Pygame audio mixer with fallback for Windows/standard drivers."""
     if not pygame.mixer.get_init():
         try:
             pygame.mixer.pre_init(frequency=sample_rate, size=-16, channels=2, buffer=buffer_size)
             pygame.mixer.init()
-           
         except pygame.error as e:
-            print(f"Audio initialization failed: {e}")
+            print(f"Low-latency audio init failed ({e}), falling back to default mixer...")
+            pygame.mixer.init()
 
 
 def generate_laser_sound(

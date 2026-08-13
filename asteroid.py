@@ -1,11 +1,16 @@
 import random
 import pygame
 import pathlib
+import sys
 from circleshape import CircleShape
 from constants import ASTEROID_MIN_RADIUS
 from logger import log_event
 
-
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and PyInstaller """
+    if hasattr(sys, "_MEIPASS"):
+        return pathlib.Path(sys._MEIPASS) / relative_path
+    return pathlib.Path(".") / relative_path
 class Asteroid(CircleShape):
     # Class-level variable to store the original image so it's loaded only once
     image = None
@@ -16,7 +21,7 @@ class Asteroid(CircleShape):
         # Load the image once if it hasn't been loaded yet
 
         if Asteroid.image is None:
-            asteroid_path = pathlib.Path("assets/asteroid.png")
+            asteroid_path = resource_path(pathlib.Path("assets") / "asteroid.png")
             Asteroid.image = pygame.image.load(asteroid_path).convert_alpha()
 
         # Scale the sprite to match the asteroid's diameter (2 * radius)
@@ -39,8 +44,6 @@ class Asteroid(CircleShape):
         if self.radius <= ASTEROID_MIN_RADIUS:
             return
 
-        # Log the split event
-        log_event("asteroid_split")
 
         # Generate a random angle for splitting
         random_angle = random.uniform(20, 50)

@@ -1,3 +1,4 @@
+import sys
 import pathlib
 import pygame
 from circleshape import CircleShape
@@ -15,7 +16,11 @@ from constants import (
 )
 from shot import Shot
 from sounds import sound_manager
-
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and PyInstaller """
+    if hasattr(sys, "_MEIPASS"):
+        return pathlib.Path(sys._MEIPASS) / relative_path
+    return pathlib.Path(".") / relative_path
 
 class Player(CircleShape):
     image = None
@@ -28,7 +33,7 @@ class Player(CircleShape):
 
         # Load base image once
         if Player.image is None:
-            ship_path = pathlib.Path("assets") / "Ship.png"
+            ship_path = resource_path(pathlib.Path("assets") / "Ship.png")
             Player.image = pygame.image.load(ship_path).convert_alpha()
 
             # Scale and explicitly call convert_alpha() on the scaled surface
